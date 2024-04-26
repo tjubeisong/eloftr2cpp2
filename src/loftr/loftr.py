@@ -29,6 +29,8 @@ def reparameter(matcher):
     return matcher
 
 
+
+
 def mysqrt(feat):
     return feat / feat.shape[-1]**.5
 
