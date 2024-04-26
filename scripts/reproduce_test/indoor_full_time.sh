@@ -13,6 +13,7 @@ n_gpus_per_node=-1
 torch_num_workers=4
 batch_size=1  # per gpu
 
+#ckpt_path="weights/eloftr_outdoor.ckpt"
 ckpt_path="weights/eloftr_outdoor.ckpt"
 
 dump_dir="dump/eloftr_full_scannet"

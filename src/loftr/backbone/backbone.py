@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from .repvgg import create_RepVGG
+import torch
 
 class RepVGG_8_1_align(nn.Module):
     """
@@ -34,4 +35,4 @@ class RepVGG_8_1_align(nn.Module):
             out = module(out) # 1/8
         x3 = out
                 
-        return {'feats_c': x3, 'feats_f': None, 'feats_x2': x2, 'feats_x1': x1}
+        return {'feats_c': x3, 'feats_f': torch.tensor([]), 'feats_x2': x2, 'feats_x1': x1}

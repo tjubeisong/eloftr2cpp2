@@ -37,7 +37,8 @@ class RoPEPositionEncodingSine(nn.Module):
         self.register_buffer('sin', sin.unsqueeze(0), persistent=False)  # [1, H, W, C//2]
         self.register_buffer('cos', cos.unsqueeze(0), persistent=False)  # [1, H, W, C//2]        
 
-    def forward(self, x, ratio=1):
+#    def forward(self, x, ratio=1):
+    def forward(self, x):
         """
         Args:
             x: [N, H, W, C]
