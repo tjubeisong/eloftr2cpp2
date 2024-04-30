@@ -10,3 +10,4 @@ tmp.*
 logs/
 weights/
 dump/
+*.zip
