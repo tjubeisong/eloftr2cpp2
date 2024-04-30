@@ -25,9 +25,12 @@ class RepVGG_8_1_align(nn.Module):
 
     def forward(self, x):
         out = self.layer0(x) # 1/2
+        print('out = ', out)
         for module in self.layer1:
             out = module(out) # 1/2
         x1 = out
+
+
         for module in self.layer2:
             out = module(out) # 1/4
         x2 = out

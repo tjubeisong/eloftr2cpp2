@@ -174,7 +174,7 @@ class LocalFeatureTransformer(nn.Module):
         #     feat1 = feat1[:, :, :mask_h1, :mask_w1]
         #     feature_cropped = True
 
-        print("-------------------------------------------------------5-------------------------------------------------")
+        # print("-------------------------------------------------------5-------------------------------------------------")
         # for i, (layer, name) in enumerate(zip(self.layers, self.layer_names)):
         for i, layer in enumerate(self.layers):
             name = self.layer_names[i]

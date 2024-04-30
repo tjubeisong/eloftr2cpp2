@@ -29,8 +29,6 @@ def reparameter(matcher):
     return matcher
 
 
-
-
 def mysqrt(feat):
     return feat / feat.shape[-1]**.5
 
@@ -53,10 +51,10 @@ class LoFTR(nn.Module):
         self.coarse_matching = CoarseMatching()
         self.fine_preprocess = FinePreprocess()
 
-        # self.fine_matching = FineMatching(config)
+        self.fine_matching = FineMatching()
 
         self.mul = self.config['resolution'][0] // self.config['resolution'][1]
-        print("============================inited finished======================")
+        # print("============================inited finished======================")
         
         
 
@@ -71,7 +69,7 @@ class LoFTR(nn.Module):
                 'mask1'(optional) : (torch.Tensor): (N, H, W)
             }
         """
-        print("----------------------------7-------------------------")
+        # print("----------------------------7-------------------------")
 
         # 1. Local Feature CNN
         # data.update({
@@ -101,7 +99,9 @@ class LoFTR(nn.Module):
         #         'feats_x2_1': ret_dict1['feats_x2'],
         #         'feats_x1_1': ret_dict1['feats_x1'],
         #     })
-
+        
+        
+        # print("feat_c0 = ", data['image1'][0, :1, 54:59, 54:59])
         ret_dict0, ret_dict1 = self.backbone(data['image0']), self.backbone(data['image1'])
         feat_c0 = ret_dict0['feats_c']
         feat_c1 = ret_dict1['feats_c']
@@ -134,8 +134,9 @@ class LoFTR(nn.Module):
         # print("-------------------------------------------------------1-------------------------------------------------")   
         
         # feat_c0, feat_c1 = self.loftr_coarse(feat_c0, feat_c1, mask_c0, mask_c1)
-        feat_c0, feat_c1 = self.loftr_coarse(feat_c0, feat_c1)
         
+               
+        feat_c0, feat_c1 = self.loftr_coarse(feat_c0, feat_c1)
         
         # feat_c0 = rearrange(feat_c0, 'n c h w -> n (h w) c')
         # feat_c1 = rearrange(feat_c1, 'n c h w -> n (h w) c')
@@ -154,8 +155,8 @@ class LoFTR(nn.Module):
         #                         mask_c1=mask_c1.view(mask_c1.size(0), -1) if mask_c1 is not None else mask_c1
         #                         )
         coarse_res = self.coarse_matching(feat_c0, feat_c1, hw0_c, hw1_c, hw0_f, hw1_f, hw0_i, hw1_i)
-        print('coarse_res = ', coarse_res)
-        print("-=-=-= ", feat_c0.device)
+        # print('coarse_res = ', coarse_res)
+        # print("-=-=-= ", feat_c0.device)
         
         # prevent fp16 overflow during mixed precision training
         
@@ -165,36 +166,39 @@ class LoFTR(nn.Module):
 
         # feat_c0, feat_c1 = map(mysqrt, [feat_c0, feat_c1])
         feat_c0, feat_c1 = feat_c0 / feat_c0.shape[-1]**.5, feat_c1 / feat_c1.shape[-1]**.5
-        print("-------------------------------------------------------2-------------------------------------------------")  
-        
-        # 4. fine-level refinement
-        print('data = ===================================', data.keys())
-      
-        feat_f0_unfold, feat_f1_unfold, _W = self.fine_preprocess(feat_c0, feat_c1, data['hw0_f'], data['hw0_c'], data['b_ids'],
-                        data['hw0_i'], data['hw1_i'], data['feats_x2_0'], data['feats_x2_1'], data['feats_x1_0'], 
-                        data['feats_x1_1'], data['i_ids'], data['j_ids'], data['hw1_c'])
+        # print("-------------------------------------------------------2-------------------------------------------------")  
 
+        # 4. fine-level refinement
+        # print('data = ===================================', data.keys())
       
+        # feat_f0_unfold, feat_f1_unfold, _W = self.fine_preprocess(feat_c0, feat_c1, data['hw0_f'], data['hw0_c'], data['b_ids'],
+        #                 data['hw0_i'], data['hw1_i'], data['feats_x2_0'], data['feats_x2_1'], data['feats_x1_0'], 
+        #                 data['feats_x1_1'], data['i_ids'], data['j_ids'], data['hw1_c'])
+        feat_f0_unfold, feat_f1_unfold, _W = self.fine_preprocess(feat_c0, feat_c1, hw0_f, hw0_c, coarse_res['b_ids'],
+                        hw0_i, hw1_i, feats,
+                        # data['feats_x2_0'], data['feats_x2_1'], data['feats_x1_0'], data['feats_x1_1'], 
+                        coarse_res['i_ids'], coarse_res['j_ids'], hw1_c)
+
         
-        '''
         
-        del data['feats_x2_0'], data['feats_x1_0'], data['feats_x2_1'], data['feats_x1_1']
-        data.update({'W': _W})
-        
-        print("-------------------------------------------------------3-------------------------------------------------")         
+        # del data['feats_x2_0'], data['feats_x1_0'], data['feats_x2_1'], data['feats_x1_1']
+        # data.update({'W': _W})
+        # print("-------------------------------------------------------3-------------------------------------------------")         
         # detect NaN during mixed precision training
         # if self.config['replace_nan'] and (torch.any(torch.isnan(feat_f0_unfold)) or torch.any(torch.isnan(feat_f1_unfold))):
         #     detect_NaN(feat_f0_unfold, feat_f1_unfold)
         
-        del feat_c0, feat_c1, mask_c0, mask_c1
-        print("-------------------------------------------------------4-------------------------------------------------")
+        # del feat_c0, feat_c1, mask_c0, mask_c1
+        # print("-------------------------------------------------------4-------------------------------------------------")
         
         # 5. match fine-level            
 
         
-        self.fine_matching(feat_f0_unfold, feat_f1_unfold, data)
-        '''
-        return data
+        fine_res = self.fine_matching(feat_f0_unfold, feat_f1_unfold, hw0_i, hw0_f, coarse_res['mkpts0_c'], coarse_res['mkpts1_c'], 
+            coarse_res['mconf'], hw0_c, bs)
+        
+        # print('fine_res = ', fine_res)
+        return data, fine_res, coarse_res
         
     def load_state_dict(self, state_dict, *args, **kwargs):
         for k in list(state_dict.keys()):

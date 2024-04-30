@@ -15,10 +15,10 @@ from src.utils.plotting import make_matching_figure
 from src.loftr import LoFTR, full_default_cfg, opt_default_cfg, reparameter
 
 # You can choose model type in ['full', 'opt']
-# model_type = 'full' # 'full' for best quality, 'opt' for best efficiency
+model_type = 'full' # 'full' for best quality, 'opt' for best efficiency
 
 # You can choose numerical precision in ['fp32', 'mp', 'fp16']. 'fp16' for best efficiency
-# precision = 'fp32' # Enjoy near-lossless precision with Mixed Precision (MP) / FP16 computation if you have a modern GPU (recommended NVIDIA architecture >= SM_70).
+precision = 'fp32' # Enjoy near-lossless precision with Mixed Precision (MP) / FP16 computation if you have a modern GPU (recommended NVIDIA architecture >= SM_70).
 
 # You can also change the deepcopy
 # if model_type == 'full':
@@ -28,10 +28,10 @@ from src.loftr import LoFTR, full_default_cfg, opt_default_cfg, reparameter
     
 _default_cfg = deepcopy(full_default_cfg)
 
-# if precision == 'mp':
-#     _default_cfg['mp'] = True
-# elif precision == 'fp16':
-#     _default_cfg['half'] = True
+if precision == 'mp':
+    _default_cfg['mp'] = True
+elif precision == 'fp16':
+    _default_cfg['half'] = True
 
 # print(_default_cfg)
 # matcher = LoFTR(config=_default_cfg)
@@ -39,7 +39,7 @@ _default_cfg = deepcopy(full_default_cfg)
 matcher = LoFTR()
 
         
-# matcher.load_state_dict(torch.load("weights/eloftr_outdoor.ckpt")['state_dict'])
+matcher.load_state_dict(torch.load("weights/eloftr_outdoor.ckpt")['state_dict'])
 # matcher = reparameter(matcher) # no reparameterization will lead to low performance
  
 # if precision == 'fp16':
@@ -86,42 +86,52 @@ print(img0.shape, img1.shape)
 
 # script start
 sm = torch.jit.script(matcher)
-print("res = ", sm(batch))
+# print("res = ", sm(batch))
 # print(type(img0), type(img1))
 # sm = matcher(batch)
 # sm = torch.jit.trace(matcher, batch)
 sm.save("traced_eloftr_model.zip")
 # # script end
 
+
+with torch.no_grad():
+    batch, fine_res, coarse_res = sm(batch)
+    mkpts0 = fine_res['mkpts0_f'].cpu().numpy()
+    mkpts1 = fine_res['mkpts1_f'].cpu().numpy()
+    mconf = coarse_res['mconf'].cpu().numpy()
+
 # Inference with EfficientLoFTR and get prediction
 # with torch.no_grad():
 #     if precision == 'mp':
 #         with torch.autocast(enabled=True, device_type='cuda'):
-#             matcher(batch)
+#             batch, fine_res, coarse_res = matcher(batch)
 #     else:
-#         matcher(batch)
-#         print("-------------------------------------------------------2-------------------------------------------------", precision)
+#         batch, fine_res, coarse_res = matcher(batch)
+        # print("-------------------------------------------------------2-------------------------------------------------", precision)
         
-#     mkpts0 = batch['mkpts0_f'].cpu().numpy()
-#     mkpts1 = batch['mkpts1_f'].cpu().numpy()
-#     mconf = batch['mconf'].cpu().numpy()
+    # mkpts0 = fine_res['mkpts0_f'].cpu().numpy()
+    # mkpts1 = fine_res['mkpts1_f'].cpu().numpy()
+    # mconf = coarse_res['mconf'].cpu().numpy()
 
-# # Draw
-# if model_type == 'opt':
-#     # print(mconf.max())
-#     mconf = (mconf - min(20.0, mconf.min())) / (max(30.0, mconf.max()) - min(20.0, mconf.min()))
+# Draw
+if model_type == 'opt':
+    # print(mconf.max())
+    mconf = (mconf - min(20.0, mconf.min())) / (max(30.0, mconf.max()) - min(20.0, mconf.min()))
 
-# import numpy as np
+
+
+import numpy as np
+
 # print("mkpts0", mkpts0.shape)
 # print("mkpts1", mkpts1.shape)
 # print("mconf", mconf.shape)
 
-# color = cm.jet(mconf)
-# text = [
-#     'LoFTR',
-#     'Matches: {}'.format(len(mkpts0)),
-#     ]
-# fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
+color = cm.jet(mconf)
+text = [
+    'LoFTR',
+    'Matches: {}'.format(len(mkpts0)),
+    ]
+fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
 
-# fig.savefig("res--0422-v5.jpg", dpi=300)
+fig.savefig("res--0428-v2.jpg", dpi=300)
 
