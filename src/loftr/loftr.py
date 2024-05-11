@@ -198,8 +198,11 @@ class LoFTR(nn.Module):
             coarse_res['mconf'], hw0_c, bs)
         
         # print('fine_res = ', fine_res)
-        return data, fine_res, coarse_res
-        
+        # return data, fine_res, coarse_res
+        # return {"data":data, "fine_res": fine_res, "coarse_res":coarse_res}
+        fine_res['mconf']=coarse_res['mconf']
+        return fine_res
+
     def load_state_dict(self, state_dict, *args, **kwargs):
         for k in list(state_dict.keys()):
             if k.startswith('matcher.'):

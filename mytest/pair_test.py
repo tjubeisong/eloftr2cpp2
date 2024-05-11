@@ -95,10 +95,13 @@ sm.save("traced_eloftr_model.zip")
 
 
 with torch.no_grad():
-    batch, fine_res, coarse_res = sm(batch)
-    mkpts0 = fine_res['mkpts0_f'].cpu().numpy()
-    mkpts1 = fine_res['mkpts1_f'].cpu().numpy()
-    mconf = coarse_res['mconf'].cpu().numpy()
+    # batch, fine_res, coarse_res = sm(batch)
+    res = sm(batch)
+    # batch, fine_res, coarse_res = res["data"], res["fine_res"], res["coarse_res"]
+    mkpts0 = res['mkpts0_f'].cpu().numpy()
+    mkpts1 = res['mkpts1_f'].cpu().numpy()
+    # mconf = coarse_res['mconf'].cpu().numpy()
+    mconf = res['mconf'].cpu().numpy()
 
 # Inference with EfficientLoFTR and get prediction
 # with torch.no_grad():
@@ -133,5 +136,5 @@ text = [
     ]
 fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
 
-fig.savefig("res--0428-v2.jpg", dpi=300)
+fig.savefig("res--0506-v2.jpg", dpi=300)
 
