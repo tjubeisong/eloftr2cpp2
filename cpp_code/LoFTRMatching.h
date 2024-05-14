@@ -23,25 +23,34 @@ struct MatchedPoints
 };
 
 //using LoFTR algorithm to match two images
+
+
+
 class LoFTRMatching
 {
 
-private:
+public:
 	cv::Mat sourceImage;
 	cv::Mat targetImage;
 	torch::jit::script::Module eLoFTRModel;
 	torch::Dict<std::string, torch::Tensor> matchingRelation;
-	torch::Device device;
-	torch::Tensor mat2tensor(const cv::Mat &mat);
+	torch::Device mdevice = torch::Device(torch::kCPU);
+	
+	at::Tensor mkpts0_f;
+	at::Tensor mkpts1_f;
+	at::Tensor mconf;
 	
 	
 public:
+	
 	//contructor 
 	LoFTRMatching();
 	LoFTRMatching(const char* configFile);
 	//Desctrucor
 	~LoFTRMatching();
 
+	torch::Tensor mat2tensor(cv::Mat image);
+	
 	//read configuration file and initialize object to set the project in function operational status.
 	//the format of the configuaration file is TBD (To Be Determined), recommend using XML format and TinyXML parser
 	// sConfgFile, input, configuaration file full path name
@@ -75,6 +84,15 @@ public:
 	//Get matchend data
 	//vData, output, the serial matched point coordinate
 	//return, true if the matched data available, otherwise the vData is kept no touch in function call
-	bool GetMatchedData(std::vector<MatchedPoints>& vData);
+	bool GetMatchedData(std::vector<float>& data);
+	
+	
+	torch::Dict<std::string, torch::Tensor> toTensorDict(const torch::IValue &value) {
+	    return c10::impl::toTypedDict<std::string, torch::Tensor>(value.toGenericDict());
+	}
+
+
+
+
 };
 
